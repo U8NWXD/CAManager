@@ -136,7 +136,7 @@ then {
   openssl req -config $confPath/root.cnf -key private/ca.key.pem -new -x509 \
   -days 3650 -sha512 -extensions v3_ca -out certs/ca.cert.pem
   echo "The Root Certificate will be valid for 10 years."
-} elif [ $operation == "makeIntermediate"]
+} elif [ $operation == "makeIntermediate" ]
 then {
   echo "WARNING: This operation should only be performed on a secured system"
   echo "Creating Directory Structure in ${pwd}"
@@ -211,7 +211,8 @@ then {
   openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
   -new sha512 -out csr/$clID.csr.pem
   echo "Give the CSR at ${pwd}/csr/$clID.csr.pem to the Intermediate CA."
-} elif [ $operation == "certServer" || $operation == "certClient" ]
+# SOURCE: https://stackoverflow.com/questions/4111475/how-to-do-a-logical-or-operation-in-shell-scripting#4111510
+} elif [ $operation == "certServer" ] || [ $operation == "certClient" ]
 then {
   if [ $operation == "certServer" ]
   then {
