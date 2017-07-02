@@ -40,13 +40,14 @@ findResource() {
   do {
     if [ -d "$path" ]
       then {
+        # https://www.linuxjournal.com/content/return-values-bash-functions
         echo "$path"
         return 0;
       }
     fi
   } done
-  echo "ERROR: The '$name' directory cannot be found."
-  echo "It can be placed in your current working directory."
+  echo "ERROR: The '$name' directory cannot be found." >&2
+  echo "It can be placed in your current working directory." >&2
   exit 1
 }
 
