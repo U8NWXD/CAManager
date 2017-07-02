@@ -35,7 +35,7 @@ findResource() {
   # Determine path to directory based on trial-and-error
   # SOURCE: https://stackoverflow.com/questions/59838/check-if-a-directory-exists-in-a-shell-script
   lst[0]=~/"Library/Application Support/com.icloud.cs_temporary/CAManager/$name"
-  lst[1]="$name"
+  lst[1]="$(pwd)/$name"
   for path in "${lst[@]}"
   do {
     if [ -d "$path" ]
