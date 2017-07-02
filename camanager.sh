@@ -218,6 +218,7 @@ then {
     echo "The $kind certificate will be valid for 1 years (+10 days)."
     echo "The certificate file is at ${pwd}/root/$intID/certs/$clID.cert.pem"
     echo "Send it back to the $kind who sent you the CSR"
+    echo "The $kind may also require the chain file from the Root CA"
   } else {
     echo "ERROR: The 'root' directory of the Intermediate CA must be in your current \
     working directory."
