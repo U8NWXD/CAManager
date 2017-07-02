@@ -51,7 +51,7 @@ confPath=${findResource "configs"}
 
 libPath=${findResource "Library"}
 
-source libPath/fileUtils
+source libPath/parseFile.sh
 
 # Parse arguments
 # SOURCE: http://wiki.bash-hackers.org/howto/getopts_tutorial
