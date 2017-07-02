@@ -58,7 +58,7 @@ while getopts ":l:e:bsnca:h" opt; do
     n)
       operation="makeNew"
       ;;
-    s)
+    v)
       operation="certServer"
       ;;
     c)
@@ -66,17 +66,30 @@ while getopts ":l:e:bsnca:h" opt; do
       ;;
     k)
       operation="revoke"
+      echo "NOTE: The functionality to revoke certificates is incomplete."
+      exit 1
+      ;;
+    m)
+      operation="revokeIntermediate"
+      echo "NOTE: The functionality to revoke intermediate CAs is incomplete."
+      exit 1
+      ;;
+    s)
+      ssss=True
+      echo "NOTE: SSSS Functionality is incomplete."
+      exit 1
       ;;
     h)
-      echo "CAManager Usage: camanager.sh -r -i -c -v -s -k -h"
+      echo "CAManager Usage: camanager.sh -r -i -t -n -v -c -k -m -h [-s]"
       echo "-r create a new self-signed root CA"
       echo "-i create a new intermediate CA and CSR"
       echo "-t create a new intermediate CA certificate (using root CA)"
       echo "-n create a new client or server key and CSR"
-      echo "-s create a new server certificate (using intermediate CA)"
+      echo "-v create a new server certificate (using intermediate CA)"
       echo "-c create a new client certificate (using intermediate CA)"
       echo "-k revoke a client or server certificate (using intermediate CA)"
       echo "-m revoke an intermediate CA certificate (using root CA)"
+      echo "-s split or combine a key with SSSS"
       echo "-h help"
       exit 0
       ;;
