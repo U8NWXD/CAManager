@@ -65,5 +65,6 @@ getLabelledData() {
 # Just removes the first and last lines
 stripHeader() {
   section=$1
+  # SOURCE: https://stackoverflow.com/questions/3548453/negative-matching-using-grep-match-lines-that-do-not-contain-foo
   return ${echo $section | grep -v \-}
 }
