@@ -184,5 +184,45 @@ then {
   openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
   -new sha512 -out csr/$clID.csr.pem
   echo "Give the CSR at ${pwd}/csr/$clID.csr.pem to the Intermediate CA."
-} 
+} elif [ $operation == "certServer" || $operation == "certClient" ]
+then {
+  if [ $operation == "certServer" ]
+  then {
+    kind="Server"
+    ext="server_cert"
+  } else {
+    kind="Client"
+    ext="usr_cert"
+  }
+  fi
+  echo -n "Enter filesystem identifying name of the Intermediate CA: "
+  read intID
+  if [ -d root/$intID ]
+  then {
+    echo -n "Enter filesystem identifying name of the $kind: "
+    read clID
+    if [ ! -f root/$intID/csr/$clID.csr.pem ]
+    then {
+      echo -n "Copy the $client's CSR to
+      ${pwd}/root/$intID/csr/$clID.csr.pem and press [ENTER] when complete. "
+      read
+    } else
+    echo "Using CSR found at ${pwd}/root/$intID/csr/$clID.csr.pem"
+    fi
+    cd $intID
+    echo "Generating certificate. You will need to enter the passphrsae for
+    the Intermediate CA key."
+    openssl ca -config $confPath/intermediate.cnf -extensions $ext \
+    -days 375 -notext -md sha512 -in csr/$clID.csr.pem \
+    -out certs/$clID.cert.pem
+    echo "The $kind certificate will be valid for 1 years (+10 days)."
+    echo "The certificate file is at ${pwd}/root/$intID/certs/$clID.cert.pem"
+    echo "Send it back to the $kind who sent you the CSR"
+  } else {
+    echo "ERROR: The 'root' directory of the Intermediate CA must be in your current \
+    working directory."
+    exit 0
+  }
+  fi
+}
 fi
