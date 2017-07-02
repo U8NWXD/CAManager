@@ -29,18 +29,29 @@ echo
 # Reset getopts index variable to 1 so it looks at the first argument
 OPTIND=1
 
-# Determine path to data directory based on trial-and-error
-# SOURCE: https://stackoverflow.com/questions/59838/check-if-a-directory-exists-in-a-shell-script
-if [ -d ~/"Library/Application Support/com.icloud.cs_temporary/CAManager/configs" ]
-  then confPath=~/"Library/Application Support/com.icloud.cs_temporary/CAManager/configs"
-elif [ -d "configs" ]
-  then confPath="configs"
-else {
-  echo "ERROR: The 'configs' directory cannot be found."
+# Arguments: The name of the resource directory to find
+findResource() {
+  name=$1
+  # Determine path to directory based on trial-and-error
+  # SOURCE: https://stackoverflow.com/questions/59838/check-if-a-directory-exists-in-a-shell-script
+  lst[0]=~/"Library/Application Support/com.icloud.cs_temporary/CAManager/$name"
+  lst[1]="$name"
+  for path in "${lst[@]}"
+  do {
+    if [ -d "$path" ]
+      then return "$path"
+    fi
+  }
+  echo "ERROR: The '$name' directory cannot be found."
   echo "It can be placed in your current working directory."
   exit 1
 }
-fi
+
+confPath=${findResource "configs"}
+
+libPath=${findResource "Library"}
+
+source libPath/fileUtils
 
 # Parse arguments
 # SOURCE: http://wiki.bash-hackers.org/howto/getopts_tutorial
