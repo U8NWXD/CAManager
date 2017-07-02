@@ -39,19 +39,21 @@ findResource() {
   for path in "${lst[@]}"
   do {
     if [ -d "$path" ]
-      then return "$path"
+      then {
+        echo "$path"
+        return 0;
+      }
     fi
-  }
+  } done
   echo "ERROR: The '$name' directory cannot be found."
   echo "It can be placed in your current working directory."
   exit 1
 }
 
-confPath=${findResource "configs"}
+confPath=$(findResource "configs")
+libPath=$(findResource "Library")
 
-libPath=${findResource "Library"}
-
-source libPath/parseFile.sh
+source $libPath/parseFile.sh
 
 # Parse arguments
 # SOURCE: http://wiki.bash-hackers.org/howto/getopts_tutorial
