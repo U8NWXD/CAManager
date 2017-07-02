@@ -57,7 +57,7 @@ source $libPath/parseFile.sh
 
 # Parse arguments
 # SOURCE: http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":l:e:bsnca:h" opt; do
+while getopts ":ritnvckmsh" opt; do
   case $opt in
     r)
       operation="makeRoot"
