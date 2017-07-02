@@ -54,6 +54,7 @@ while getopts ":l:e:bsnca:h" opt; do
       ;;
     t)
       operation="signIntermediate"
+      ;;
     c)
       operation="makeClient"
       ;;
@@ -92,10 +93,6 @@ while getopts ":l:e:bsnca:h" opt; do
   esac
 done
 
-if [ $operation != "makeRoot" && !( -d ../root ) ]
-then echo "ERROR: This tool needs to be run in the 'root' directory it created."
-fi
-
 if [ $operation == "makeRoot" ]
 then {
   echo "WARNING: This operation should only be performed on an airgapped system"
@@ -111,26 +108,57 @@ then {
   echo "Creating Root Certificate. You will need to enter the passphrase again."
   openssl req -config $confPath/root.cnf -key private/ca.key.pem -new -x509 \
   -days 3650 -sha512 -extensions v3_ca -out certs/ca.cert.pem
-  echo "The root certificate will be valid for 10 years."
+  echo "The Root Certificate will be valid for 10 years."
 } elif [ $operation == "makeIntermediate"]
 then {
   echo "WARNING: This operation should only be performed on a secured system"
   echo "Creating Directory Structure in ${pwd}"
   mkdir root
-  mkdir root/intermediate
-  cd root/intermediate
+  echo -n "Choose a name to identify this Intermediate CA in the filesystem: "
+  read intID
+  mkdir root/$intID
+  cd root/$intID
   mkdir certs crl csr newcerts private
   touch index.txt
   echo 1000 > serial
   echo 1000 > crlnumber
   echo "Generating Intermediate CA Key. \
   You will need to enter a strong passphrase."
-  openssl genrsa -aes256 -out private/intermediate.key.pem 4096
+  openssl genrsa -aes256 -out private/$intID.key.pem 4096
   echo "Creating CSR. You will need to enter the passphrase again."
   openssl req -config $confPath/intermediate.cnf -new -sha512 \
-  -key private/intermediate.key.pem -out csr/intermediate.csr.pem
-  echo "The CSR can be found at ${pwd}/csr/intermediate.csr.pem."
+  -key private/$intID.key.pem -out csr/$intID.csr.pem
+  echo "The CSR can be found at ${pwd}/csr/$intID.csr.pem."
   echo "Give the CSR to the Root CA for signing to generate the intermediate \
   certificate. Signing will be done with: camanager.sh -t"
+} elif [ $operation == "signIntermediate" ]
+then {
+  if [ -d root/ca ]
+  then {
+    echo -n "Enter filesystem identifying name of Intermediate CA to sign: "
+    read intID
+    if [ ! -f root/ca/csr/$intID.csr.pem ]
+    then {
+      echo -n "Copy the Intermediate CA's CSR to
+      ${pwd}/root/ca/csr/$intID.csr.pem and press [ENTER] when complete. "
+      read
+    } else
+    echo "Using CSR found at ${pwd}/root/ca/csr/$intID.csr.pem"
+    fi
+    cd ca
+    openssl ca -config $confPath/root.cnf -extensions v3_intermediate_ca \
+    -days 1825 -notext -md sha512 -in csr/$intID.csr.pem \
+    -out certs/$intID.cert.pem
+    cat certs/$intID.cert.pem certs/ca.cert.pem > certs/$intID-chain.cert.pem
+    echo "The Intermediate Certificate will be valid for 5 years."
+    echo "The certificate file is at ${pwd}/root/ca/certs/$intID.cert.pem"
+    echo "The chain file is at ${pwd}/root/ca/certs/$intID-chain.cert.pem"
+    echo "Send both back to the Intermediate CA who sent you the CSR"
+  } else {
+    echo "ERROR: The 'root' directory of the Root CA must be in your current \
+    working directory."
+    exit 0
+  }
+  fi
 }
 fi
