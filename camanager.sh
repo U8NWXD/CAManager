@@ -55,14 +55,14 @@ while getopts ":l:e:bsnca:h" opt; do
     t)
       operation="signIntermediate"
       ;;
-    c)
-      operation="makeClient"
-      ;;
-    v)
-      operation="makeServer"
+    n)
+      operation="makeNew"
       ;;
     s)
-      operation="makeCert"
+      operation="certServer"
+      ;;
+    c)
+      operation="certClient"
       ;;
     k)
       operation="revoke"
@@ -72,9 +72,9 @@ while getopts ":l:e:bsnca:h" opt; do
       echo "-r create a new self-signed root CA"
       echo "-i create a new intermediate CA and CSR"
       echo "-t create a new intermediate CA certificate (using root CA)"
-      echo "-c create a new client key and CSR"
-      echo "-v create a new server key and CSR"
-      echo "-s create a new client or server certificate (using intermediate CA)"
+      echo "-n create a new client or server key and CSR"
+      echo "-s create a new server certificate (using intermediate CA)"
+      echo "-c create a new client certificate (using intermediate CA)"
       echo "-k revoke a client or server certificate (using intermediate CA)"
       echo "-m revoke an intermediate CA certificate (using root CA)"
       echo "-h help"
@@ -146,9 +146,12 @@ then {
     echo "Using CSR found at ${pwd}/root/ca/csr/$intID.csr.pem"
     fi
     cd ca
+    echo "Generating certificate. You will need to enter the passphrsae for
+    the Root CA key."
     openssl ca -config $confPath/root.cnf -extensions v3_intermediate_ca \
     -days 1825 -notext -md sha512 -in csr/$intID.csr.pem \
     -out certs/$intID.cert.pem
+    echo "Generating certificate chain file."
     cat certs/$intID.cert.pem certs/ca.cert.pem > certs/$intID-chain.cert.pem
     echo "The Intermediate Certificate will be valid for 5 years."
     echo "The certificate file is at ${pwd}/root/ca/certs/$intID.cert.pem"
@@ -160,5 +163,26 @@ then {
     exit 0
   }
   fi
-}
+} elif [ $operation == "makeNew" ]
+then {
+  if [ -d root ]
+  then echo "Using the 'root' directory found at ${pwd}/root"
+  else {
+    echo "Creating 'root' directory at ${pwd}/root"
+    mkdir root
+  }
+  fi
+  echo -n "Choose a name to identify this client/server in the filesystem: "
+  read $clID
+  echo "Creating directory structure"
+  mkdir $clID
+  cd $clID
+  mkdir certs csr private
+  echo "Generating private key. You will need to choose a strong passphrase."
+  openssl genrsa -aes256 -out private/$clID.key.pem 4096
+  echo "Generating CSR. You will need to enter the passphrase again."
+  openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
+  -new sha512 -out csr/$clID.csr.pem
+  echo "Give the CSR at ${pwd}/csr/$clID.csr.pem to the Intermediate CA."
+} 
 fi
