@@ -123,7 +123,7 @@ done
 if [ $operation == "makeRoot" ]
 then {
   echo "WARNING: This operation should only be performed on an airgapped system"
-  echo "Creating Directory Structure in ${pwd}"
+  echo "Creating Directory Structure in $(pwd)"
   mkdir root
   mkdir root/ca
   cd root/ca
@@ -139,7 +139,7 @@ then {
 } elif [ $operation == "makeIntermediate" ]
 then {
   echo "WARNING: This operation should only be performed on a secured system"
-  echo "Creating Directory Structure in ${pwd}"
+  echo "Creating Directory Structure in $(pwd)"
   mkdir root
   echo -n "Choose a name to identify this Intermediate CA in the filesystem: "
   read intID
@@ -149,14 +149,14 @@ then {
   touch index.txt
   echo 1000 > serial
   echo 1000 > crlnumber
-  echo "Generating Intermediate CA Key. \
+  echo "Generating Intermediate CA Key.
   You will need to enter a strong passphrase."
   openssl genrsa -aes256 -out private/$intID.key.pem 4096
   echo "Creating CSR. You will need to enter the passphrase again."
   openssl req -config $confPath/intermediate.cnf -new -sha512 \
   -key private/$intID.key.pem -out csr/$intID.csr.pem
-  echo "The CSR can be found at ${pwd}/csr/$intID.csr.pem."
-  echo "Give the CSR to the Root CA for signing to generate the intermediate \
+  echo "The CSR can be found at $(pwd)/csr/$intID.csr.pem."
+  echo "Give the CSR to the Root CA for signing to generate the intermediate
   certificate. Signing will be done with: camanager.sh -t"
 } elif [ $operation == "signIntermediate" ]
 then {
@@ -167,10 +167,10 @@ then {
     if [ ! -f root/ca/csr/$intID.csr.pem ]
     then {
       echo -n "Copy the Intermediate CA's CSR to
-      ${pwd}/root/ca/csr/$intID.csr.pem and press [ENTER] when complete. "
+      $(pwd)/root/ca/csr/$intID.csr.pem and press [ENTER] when complete. "
       read
     } else
-    echo "Using CSR found at ${pwd}/root/ca/csr/$intID.csr.pem"
+    echo "Using CSR found at $(pwd)/root/ca/csr/$intID.csr.pem"
     fi
     cd ca
     echo "Generating certificate. You will need to enter the passphrsae for
@@ -181,11 +181,11 @@ then {
     echo "Generating certificate chain file."
     cat certs/$intID.cert.pem certs/ca.cert.pem > certs/$intID-chain.cert.pem
     echo "The Intermediate Certificate will be valid for 5 years."
-    echo "The certificate file is at ${pwd}/root/ca/certs/$intID.cert.pem"
-    echo "The chain file is at ${pwd}/root/ca/certs/$intID-chain.cert.pem"
+    echo "The certificate file is at $(pwd)/root/ca/certs/$intID.cert.pem"
+    echo "The chain file is at $(pwd)/root/ca/certs/$intID-chain.cert.pem"
     echo "Send both back to the Intermediate CA who sent you the CSR"
   } else {
-    echo "ERROR: The 'root' directory of the Root CA must be in your current \
+    echo "ERROR: The 'root' directory of the Root CA must be in your current
     working directory."
     exit 0
   }
@@ -193,9 +193,9 @@ then {
 } elif [ $operation == "makeNew" ]
 then {
   if [ -d root ]
-  then echo "Using the 'root' directory found at ${pwd}/root"
+  then echo "Using the 'root' directory found at $(pwd)/root"
   else {
-    echo "Creating 'root' directory at ${pwd}/root"
+    echo "Creating 'root' directory at $(pwd)/root"
     mkdir root
   }
   fi
@@ -210,7 +210,7 @@ then {
   echo "Generating CSR. You will need to enter the passphrase again."
   openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
   -new sha512 -out csr/$clID.csr.pem
-  echo "Give the CSR at ${pwd}/csr/$clID.csr.pem to the Intermediate CA."
+  echo "Give the CSR at $(pwd)/csr/$clID.csr.pem to the Intermediate CA."
 # SOURCE: https://stackoverflow.com/questions/4111475/how-to-do-a-logical-or-operation-in-shell-scripting#4111510
 } elif [ $operation == "certServer" ] || [ $operation == "certClient" ]
 then {
@@ -232,10 +232,10 @@ then {
     if [ ! -f root/$intID/csr/$clID.csr.pem ]
     then {
       echo -n "Copy the $client's CSR to
-      ${pwd}/root/$intID/csr/$clID.csr.pem and press [ENTER] when complete. "
+      $(pwd)/root/$intID/csr/$clID.csr.pem and press [ENTER] when complete. "
       read
     } else
-    echo "Using CSR found at ${pwd}/root/$intID/csr/$clID.csr.pem"
+    echo "Using CSR found at $(pwd)/root/$intID/csr/$clID.csr.pem"
     fi
     cd $intID
     echo "Generating certificate. You will need to enter the passphrsae for
@@ -244,11 +244,11 @@ then {
     -days 375 -notext -md sha512 -in csr/$clID.csr.pem \
     -out certs/$clID.cert.pem
     echo "The $kind certificate will be valid for 1 years (+10 days)."
-    echo "The certificate file is at ${pwd}/root/$intID/certs/$clID.cert.pem"
+    echo "The certificate file is at $(pwd)/root/$intID/certs/$clID.cert.pem"
     echo "Send it back to the $kind who sent you the CSR"
     echo "The $kind may also require the chain file from the Root CA"
   } else {
-    echo "ERROR: The 'root' directory of the Intermediate CA must be in your current \
+    echo "ERROR: The 'root' directory of the Intermediate CA must be in your current
     working directory."
     exit 0
   }
