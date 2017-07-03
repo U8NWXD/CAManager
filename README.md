@@ -36,14 +36,13 @@ CAManager Usage: camanager.sh -r -i -t -n -v -c -k -m -h [-s]
 ### Features to Add
 * Encrypt the `pass` file used to pass keys when performing `ssss-split`
 * Add stronger password protections like PBKDF2
-* Add combination features to `ssss.sh` for combining splits with `ssss-combine`
 * Add authenticated encryption
   * HMACs for private keys
   * Digital signatures or HMACs for SSSS splits
 ### Incomplete Features
-* `-k revoke a client or server certificate (using intermediate CA)`
-* `-m revoke an intermediate CA certificate (using root CA)`
-* `-s split or combine a key with SSSS`
+* `-k revoke a client or server certificate (using intermediate CA)`: Unwritten
+* `-m revoke an intermediate CA certificate (using root CA)`: Unwritten
+* `-s split or combine a key with SSSS`: Untested
 
 ## Acknowledgements
 ### [OpenSSL Certificate Authority Tutorial](https://jamielinux.com/docs/openssl-certificate-authority/index.html)
