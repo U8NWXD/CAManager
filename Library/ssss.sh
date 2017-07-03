@@ -99,3 +99,52 @@ split() {
   }
   done
 }
+
+# Users will be prompted for paths to their split files
+# Split files will be used to extract encryption key for PEM Key
+# Decrypted PEM Key will be placed at the location specified by parameter
+# Parameters: pathForPEM
+combine() {
+  pathForPEM=$1
+  read -p "Path to a Split File: " initSplitPath
+  initConf=$(getSection "HEADER" "$initSplitPath")
+  made=$(getLabelledData "Splits Made" "$initConf")
+  need=$(getLabelledData "Splits Needed" "$initConf")
+
+  decryptedSplits=""
+
+  for (( i = 1; i <= $need; i++ ))
+  do {
+    if [ $i == 1 ]
+      then splitPath=$initSplitPath
+    else
+      read -p "Enter Path to Another Split File: " splitPath
+    fi
+    currConf=$(getSection "HEADER" "$splitPath")
+    name=$(getLabelledData "Split Holder" "$currConf")
+    echo "Now decrypting the key for $name. You will need to authenticate."
+    encryptedSection=$(getSection "ENCRYPTED KEY" "$splitPath")
+    encrypted=$(stripHeader $encryptedSection)
+    split=$(gpg2 -d <<< $encrypted)
+    decryptedSplits="$decryptedSplits$split\n"
+  }
+  done
+  decryptedSplits=${echo -e "$decryptedSplits"}
+  key=$(ssss-combine -t $need -q <<< $decryptedSplits)
+
+  while [ -f encryptedPEM.pem ]
+  do {
+    read -p "Rename the file $(pwd)/encryptedPEM.pem and press [ENTER] when done."
+  }
+  done
+
+  while [ -f "$pathForPEM" ]
+  do {
+    read -p "Rename the file $pathForPEM and press [ENTER] when done."
+  }
+  done
+
+  getSection "RSA PRIVATE KEY" "$initSplitPath" > encryptedPEM.pem
+  #SOURCE: https://support.citrix.com/article/CTX122930
+  openssl rsa -in encryptedPEM.pem -out "$pathForPEM" -passin stdin <<< $key
+}
