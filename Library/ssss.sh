@@ -38,6 +38,7 @@ ski() {
 # Encryption key for PEM Key must be provided via STDIN
 # Parameters: pathToPEMKey
 split() {
+  update "Beginning to Split Key"
   path=$1
   local key
   key=$(<pass)
@@ -45,22 +46,26 @@ split() {
   program="CAManager.sh"
   date=$(date -u +"%Y-%m-%d-%H-%M-%S")
   title="SSSS Split"
-  read -p "Informal Key Name: " keyName
+  prompt "Informal Key Name: "
+  read keyName
   #SOURCE: https://stackoverflow.com/questions/18761209/how-to-make-a-bash-function-which-can-read-from-standard-input
   print=$(ski $path <<< $key)
-  read -p "Number of Splits to Make: " make
-  read -p "Number of Splits to Require for Unlocking: " need
-
-  echo "Just before splitting"
+  prompt "Number of Splits to Make: "
+  read make
+  prompt "Number of Splits to Require for Unlocking: "
+  read need
 
   splits=$(ssss-split -n $make -t $need <<< $key)
+  update "Splits Generated"
 
+  update "Creating Split Files"
   for (( i = 1; i <= make; i++ ))
   do {
-    read -p "Name of Split-Holder $i: " name
+    prompt "Name of Split Holder #$1: "
+    read name
 
     split=$(grep "$i-" <<< $splits)
-    echo "Choose how you would like your ssss-split encrypted."
+    instruct "Choose how you would like your ssss-split encrypted."
     select choice in "GPG-Symmetric" "GPG-Asymmetric"; do
       case $choice in
         GPG-Symmetric )
@@ -68,7 +73,8 @@ split() {
           break
           ;;
         GPG-Asymmetric )
-          read -p "UserID of Key to Encrypt For: " uid
+          prompt "UserID of Key to Encrypt For (Must be Imported to GPG): "
+          read uid
           encrypted=$(gpg2 -e -r --armor $uid --cipher-algo AES256 <<< $split)
           break
           ;;
@@ -95,9 +101,10 @@ split() {
     echo "$encrypted" >> $splitFile
     echo "-----END ENCRYPTED KEY-----" >> $splitFile
 
-    echo "Your Split File is Available At $splitFile"
+    end "Your Split File is Available At $splitFile"
   }
   done
+  end "All Splits Created and Available in $(pwd)"
 }
 
 # Users will be prompted for paths to their split files
@@ -105,46 +112,56 @@ split() {
 # Decrypted PEM Key will be placed at the location specified by parameter
 # Parameters: pathForPEM
 combine() {
+  update "Beginning Split Combination for Key Decryption"
   pathForPEM=$1
-  read -p "Path to a Split File: " initSplitPath
+  update "Getting Initial Configuration from any Split File"
+  prompt "Path to a Split File: "
+  read initSplitPath
   initConf=$(getSection "HEADER" "$initSplitPath")
   made=$(getLabelledData "Splits Made" "$initConf")
   need=$(getLabelledData "Splits Needed" "$initConf")
 
   decryptedSplits=""
 
+  update "Initialization Complete. Collecting Each Split File."
   for (( i = 1; i <= $need; i++ ))
   do {
     if [ $i == 1 ]
       then splitPath=$initSplitPath
-    else
-      read -p "Enter Path to Another Split File: " splitPath
+    else {
+      prompt "Enter Path to Another Split File: "
+      read splitPath
+    }
     fi
     currConf=$(getSection "HEADER" "$splitPath")
     name=$(getLabelledData "Split Holder" "$currConf")
-    echo "Now decrypting the key for $name. You will need to authenticate."
+    update "Now decrypting the key for $name. You will need to authenticate."
     encryptedSection=$(getSection "ENCRYPTED KEY" "$splitPath")
     encrypted=$(stripHeader $encryptedSection)
     split=$(gpg2 -d <<< $encrypted)
     decryptedSplits="$decryptedSplits$split\n"
   }
   done
+  update "All splits processed and decrypted. Combining to decrypt key."
   decryptedSplits=${echo -e "$decryptedSplits"}
   key=$(ssss-combine -t $need -q <<< $decryptedSplits)
 
   while [ -f encryptedPEM.pem ]
   do {
-    read -p "Rename the file $(pwd)/encryptedPEM.pem and press [ENTER] when done."
+    prompt "Rename the file at $(pwd)/encryptedPEM.pem and press [ENTER] when done."
+    read
   }
   done
 
   while [ -f "$pathForPEM" ]
   do {
-    read -p "Rename the file $pathForPEM and press [ENTER] when done."
+    prompt "Rename the file $pathForPEM and press [ENTER] when done."
+    read
   }
   done
 
   getSection "RSA PRIVATE KEY" "$initSplitPath" > encryptedPEM.pem
   #SOURCE: https://support.citrix.com/article/CTX122930
   openssl rsa -in encryptedPEM.pem -out "$pathForPEM" -passin stdin <<< $key
+  end "Splits Combined and Key Decrypted"
 }
