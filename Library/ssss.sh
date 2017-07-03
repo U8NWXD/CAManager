@@ -16,7 +16,9 @@
 
 # Generate a 256-bit key and echo it for command substitution or piping
 genKey() {
-  openssl rand -base64 256
+  key=$(openssl rand -base64 256)
+  #SOURCE: https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
+  tr -d "\n " <<< $key
 }
 
 # Generate SKI
@@ -35,7 +37,7 @@ ski() {
 
 # Split the key found in 'pass' using ssss
 # Users will be prompted for parameters, and key files will be created
-# Encryption key for PEM Key must be provided via STDIN
+# Encryption key for PEM Key must be provided via 'pass' file
 # Parameters: pathToPEMKey
 split() {
   update "Beginning to Split Key"
@@ -55,16 +57,16 @@ split() {
   prompt "Number of Splits to Require for Unlocking: "
   read need
 
-  splits=$(ssss-split -n $make -t $need <<< $key)
+  splits="$(ssss-split -n $make -t $need <<< "$key")"
   update "Splits Generated"
 
   update "Creating Split Files"
   for (( i = 1; i <= make; i++ ))
   do {
-    prompt "Name of Split Holder #$1: "
+    prompt "Name of Split Holder #$i: "
     read name
 
-    split=$(grep "$i-" <<< $splits)
+    split=$(grep "$i-" <<< "$splits")
     instruct "Choose how you would like your ssss-split encrypted."
     select choice in "GPG-Symmetric" "GPG-Asymmetric"; do
       case $choice in
@@ -75,7 +77,7 @@ split() {
         GPG-Asymmetric )
           prompt "UserID of Key to Encrypt For (Must be Imported to GPG): "
           read uid
-          encrypted=$(gpg2 -e -r --armor $uid --cipher-algo AES256 <<< $split)
+          encrypted=$(gpg2 -e -r $uid --armor --cipher-algo AES256 <<< $split)
           break
           ;;
       esac
@@ -83,8 +85,7 @@ split() {
 
     #SOURCE: https://stackoverflow.com/questions/40664470/securely-passing-password-through-bash
     splitFile="SSSS-Split$i.txt"
-    touch $splitFile
-    echo "-----BEGIN HEADER-----" >> $splitFile
+    echo "-----BEGIN HEADER-----" > $splitFile
     echo "Program: $program" >> $splitFile
     echo "Date: $date" >> $splitFile
     echo "Title: SSSS Split #$i" >> $splitFile
@@ -137,14 +138,17 @@ combine() {
     name=$(getLabelledData "Split Holder" "$currConf")
     update "Now decrypting the key for $name. You will need to authenticate."
     encryptedSection=$(getSection "ENCRYPTED KEY" "$splitPath")
-    encrypted=$(stripHeader $encryptedSection)
-    split=$(gpg2 -d <<< $encrypted)
+    encrypted="$(stripHeader "ENCRYPTED KEY" "$encryptedSection")"
+    split=$(gpg2 -d <<< "$encrypted")
     decryptedSplits="$decryptedSplits$split\n"
   }
   done
   update "All splits processed and decrypted. Combining to decrypt key."
-  decryptedSplits=${echo -e "$decryptedSplits"}
-  key=$(ssss-combine -t $need -q <<< $decryptedSplits)
+  decryptedSplits=$(echo -e "$decryptedSplits")
+  #SOURCE: http://www.tldp.org/LDP/abs/html/io-redirection.html
+  # ssss-combine sends the key to STDERR, so have to redirect with 2>&1
+  key="$(ssss-combine -t $need -q <<< "$decryptedSplits" 2>&1)"
+  #SOURCE: https://unix.stackexchange.com/questions/144298/delete-the-last-character-of-a-string-using-string-manipulation-in-shell-script
 
   while [ -f encryptedPEM.pem ]
   do {
@@ -162,6 +166,8 @@ combine() {
 
   getSection "RSA PRIVATE KEY" "$initSplitPath" > encryptedPEM.pem
   #SOURCE: https://support.citrix.com/article/CTX122930
-  openssl rsa -in encryptedPEM.pem -out "$pathForPEM" -passin stdin <<< $key
+  openssl rsa -in encryptedPEM.pem -out "$pathForPEM" -passin stdin <<< "$key"
+  update "Deleting encryptedPEM.pem"
+  rm -P encryptedPEM.pem
   end "Splits Combined and Key Decrypted"
 }

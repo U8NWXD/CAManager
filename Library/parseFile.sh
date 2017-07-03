@@ -22,24 +22,24 @@
 getSection() {
   name=$1
   path=$2
-  while read line
   capture=False
   section=""
+  while read line
   do {
-    if [ $line == "-----BEGIN $name-----" ]
+    if [ "$line" == "-----BEGIN $name-----" ]
       then {
         section="$section$line\n"
         capture=True
-      } elif [ $line == "-----END $name-----"]
+      } elif [ "$line" == "-----END $name-----" ]
       then {
         section="$section$line\n"
         capture=False
-      } elif [ $capture ]
+      } elif [ $capture == True ]
       then section="$section$line\n"
     fi
   } done <$path
   # SOURCE: https://stackoverflow.com/questions/23929235/multi-line-string-with-extra-space-preserved-indentation
-  return ${echo -e "$section"}
+  echo -e "$section"
 }
 
 # Extract the data labelled within a section
@@ -53,18 +53,21 @@ getLabelledData() {
   length=${#label}
   startIndex=length+2
 
-  line=${echo "$text" | grep "$label: "}
+  line=$(echo "$text" | grep "$label: ")
   # SOURCE: https://stackoverflow.com/questions/1405611/extracting-first-two-characters-of-a-string-shell-scripting
   data=${line:startIndex}
-  return $data
+  #SOURCE: https://stackoverflow.com/questions/15184358/how-to-avoid-bash-command-substitution-to-remove-the-newline-character
+  echo "$data"
 }
 
 # Remove the headers from a section extracted using getSection()
 # Returns the section without the headers
-# Arguments: section
-# Just removes the first and last lines
+# Arguments: sectionID section
 stripHeader() {
-  section=$1
+  id=$1
+  section=$2
   # SOURCE: https://stackoverflow.com/questions/3548453/negative-matching-using-grep-match-lines-that-do-not-contain-foo
-  return ${echo $section | grep -v \-}
+  replaced=${section/-----BEGIN $id-----/}
+  replaced=${replaced/-----END $id-----/}
+  echo "$replaced"
 }
