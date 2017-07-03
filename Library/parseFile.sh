@@ -71,3 +71,13 @@ stripHeader() {
   replaced=${replaced/-----END $id-----/}
   echo "$replaced"
 }
+
+# Wait for a file to be renamed/moved/deleted
+# Arguments: pathToFile
+waitForRename() {
+  while [ -f $1 ]
+  do {
+    prompt "Rename the file $(pwd)/$1 and press [ENTER] when done."
+  }
+  done
+}
