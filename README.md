@@ -42,7 +42,6 @@ CAManager Usage: camanager.sh -r -i -t -n -v -c -k -m -h [-s]
 ### Incomplete Features
 * `-k revoke a client or server certificate (using intermediate CA)`: Unwritten
 * `-m revoke an intermediate CA certificate (using root CA)`: Unwritten
-* `-s split or combine a key with SSSS`: Integraton Untested
 
 ## Acknowledgements
 ### [OpenSSL Certificate Authority Tutorial](https://jamielinux.com/docs/openssl-certificate-authority/index.html)

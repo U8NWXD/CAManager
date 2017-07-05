@@ -16,7 +16,7 @@
 
 # Generate a 256-bit key and echo it for command substitution or piping
 genKey() {
-  key=$(openssl rand -base64 256)
+  key=$(openssl rand -base64 95)
   #SOURCE: https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
   tr -d "\n " <<< $key
 }
@@ -44,14 +44,13 @@ split() {
   path=$1
   local key
   key=$(<pass)
-  rm -P pass
   program="CAManager.sh"
   date=$(date -u +"%Y-%m-%d-%H-%M-%S")
   title="SSSS Split"
-  prompt "Informal Key Name: "
+  prompt "Informal Key Name (LettersOnly): "
   read keyName
   #SOURCE: https://stackoverflow.com/questions/18761209/how-to-make-a-bash-function-which-can-read-from-standard-input
-  print=$(ski $path <<< $key)
+  print=$(ski "$path" <<< $key)
   prompt "Number of Splits to Make: "
   read make
   prompt "Number of Splits to Require for Unlocking: "
@@ -84,7 +83,7 @@ split() {
     done
 
     #SOURCE: https://stackoverflow.com/questions/40664470/securely-passing-password-through-bash
-    splitFile="SSSS-Split$i.txt"
+    splitFile="$keyName-Split$i.txt"
     echo "-----BEGIN HEADER-----" > $splitFile
     echo "Program: $program" >> $splitFile
     echo "Date: $date" >> $splitFile
@@ -116,7 +115,7 @@ combine() {
   update "Beginning Split Combination for Key Decryption"
   pathForPEM=$1
   update "Getting Initial Configuration from any Split File"
-  prompt "Path to a Split File: "
+  prompt "Path to a Split File from $(pwd): "
   read initSplitPath
   initConf=$(getSection "HEADER" "$initSplitPath")
   made=$(getLabelledData "Splits Made" "$initConf")
@@ -130,7 +129,7 @@ combine() {
     if [ $i == 1 ]
       then splitPath=$initSplitPath
     else {
-      prompt "Enter Path to Another Split File: "
+      prompt "Enter Path to Another Split File from $(pwd): "
       read splitPath
     }
     fi

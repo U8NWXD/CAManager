@@ -132,20 +132,21 @@ then {
   mkdir certs crl newcerts private csr
   touch index.txt
   echo 1000 > serial
-  if [ $ssss == True]
+  if [ $ssss == True ]
   then {
     update "Generating Root CA Key and Split Key Files"
     key="$(genKey)"
     waitForRename pass
     echo "$key" > pass
     update "Generating Root CA Key encrypted with a random key."
-    openssl genrsa -aes256 -out private/ca.key.pem -passin stdin 4096 <<< "$key"
+    openssl genrsa -aes256 -out private/ca.key.pem -passout file:pass 4096
     update "Creating Root Certificate."
     openssl req -config $confPath/root.cnf -key private/ca.key.pem -new -x509 \
     -days 3650 -sha512 -extensions v3_ca -out certs/ca.cert.pem \
-    -passin stdin <<< "$key"
+    -passin file:pass
     update "Generating Split Files"
     split private/ca.key.pem
+    rm -P pass
   } else {
     update "Generating Root CA Key. You will need to enter a strong passphrase."
     openssl genrsa -aes256 -out private/ca.key.pem 4096
@@ -182,12 +183,13 @@ then {
     waitForRename pass
     echo "$key" > pass
     update "Generating Intermediate CA key encrypted with a random key"
-    openssl genrsa -aes256 -out private/$intID.key.pem -passin stdin 4096 <<< "$key"
+    openssl genrsa -aes256 -out private/$intID.key.pem -passout file:pass 4096
     update "Creating CSR."
     openssl req -config $confPath/intermediate.cnf -new -sha512 \
-    -key private/$intID.key.pem -out csr/$intID.csr.pem -passin stdin <<< "$key"
+    -key private/$intID.key.pem -out csr/$intID.csr.pem -passin file:pass
     update "Generating Split Files"
     split private/$intID.key.pem
+    rm -P pass
   } else {
     update "Generating Intermediate CA Key. You will need to enter a strong passphrase."
     openssl genrsa -aes256 -out private/$intID.key.pem 4096
@@ -216,7 +218,7 @@ then {
     cd root/ca
     if [ $ssss == True ]
     then {
-      update "Combining Splits"
+      update "Combining Splits to Unlock Root CA Key"
       combine private/ca.key.pem
       update "Generating certificate"
       openssl ca -config $confPath/root.cnf -extensions v3_intermediate_ca \
@@ -266,10 +268,11 @@ then {
     waitForRename pass
     echo "$key" > pass
     update "Generating private key, encrypted with a random key."
-    openssl genrsa -aes256 -out private/$clID.key.pem -passin stdin 4096 <<< "$key"
+    openssl genrsa -aes256 -out private/$clID.key.pem -passout file:pass 4096
     update "Generating CSR."
     openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
-    -new -sha512 -out csr/$clID.csr.pem -passin stdin <<< "$key"
+    -new -sha512 -out csr/$clID.csr.pem -passin file:pass
+    rm -P pass
   } else {
     update "Generating private key. You will need to choose a strong passphrase."
     openssl genrsa -aes256 -out private/$clID.key.pem 4096
@@ -311,6 +314,7 @@ then {
     cd root/$intID
     if [ $ssss == True ]
     then {
+      update "Combining Splits to Unlock Intermediate CA ($intID) Key"
       update "Renaming Intermediate CA certificate file temporarily"
       mv certs/$intID.cert.pem certs/intermediate.cert.pem
       update "Combining Splits"
