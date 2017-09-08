@@ -146,7 +146,8 @@ combine() {
   decryptedSplits=$(echo -e "$decryptedSplits")
   #SOURCE: http://www.tldp.org/LDP/abs/html/io-redirection.html
   # ssss-combine sends the key to STDERR, so have to redirect with 2>&1
-  key="$(ssss-combine -t $need -q <<< "$decryptedSplits" 2>&1)"
+  key="$(ssss-combine -t $need -Q <<< "$decryptedSplits" 2>&1)"
+  key=$(echo "$key" | grep -v "WARNING")
   #SOURCE: https://unix.stackexchange.com/questions/144298/delete-the-last-character-of-a-string-using-string-manipulation-in-shell-script
 
   while [ -f encryptedPEM.pem ]
@@ -167,6 +168,10 @@ combine() {
   #SOURCE: https://support.citrix.com/article/CTX122930
   openssl rsa -in encryptedPEM.pem -out "$pathForPEM" -passin stdin <<< "$key"
   update "Deleting encryptedPEM.pem"
-  rm -P encryptedPEM.pem
+  if [ $secErase == "rm" ]
+    then rm -P encryptedPEM.pem
+  else
+    shred -u encryptedPEM.pem
+  fi
   end "Splits Combined and Key Decrypted"
 }
