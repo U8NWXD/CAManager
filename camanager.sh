@@ -122,6 +122,20 @@ while getopts ":ritnvckmsh" opt; do
   esac
 done
 
+instruct "Choose how files should be securely erased."
+    select choice in "rm" "shred"; do
+      case $choice in
+        rm )
+          secErase="rm"
+          break
+          ;;
+        shred )
+          secErase="shred"
+          break
+          ;;
+      esac
+    done
+
 if [ $operation == "makeRoot" ]
 then {
   warn "WARNING: This operation should only be performed on an airgapped system"
@@ -146,7 +160,11 @@ then {
     -passin file:pass
     update "Generating Split Files"
     split private/ca.key.pem
-    rm -P pass
+    if [ $secErase == "rm" ]
+      then rm -P pass
+    else
+      shred -u pass
+    fi
   } else {
     update "Generating Root CA Key. You will need to enter a strong passphrase."
     openssl genrsa -aes256 -out private/ca.key.pem 4096
@@ -189,7 +207,11 @@ then {
     -key private/$intID.key.pem -out csr/$intID.csr.pem -passin file:pass
     update "Generating Split Files"
     split private/$intID.key.pem
-    rm -P pass
+    if [ $secErase == "rm" ]
+      then rm -P pass
+    else
+      shred -u pass
+    fi
   } else {
     update "Generating Intermediate CA Key. You will need to enter a strong passphrase."
     openssl genrsa -aes256 -out private/$intID.key.pem 4096
@@ -225,7 +247,11 @@ then {
       -days 1825 -notext -md sha512 -in csr/$intID.csr.pem \
       -out certs/$intID.cert.pem
       update "Securely Erasing Decrypted Key File"
-      rm -P private/ca.key.pem
+      if [ $secErase == "rm" ]
+        then rm -P private/ca.key.pem
+      else
+        shred -u private/ca.key.pem
+      fi
     } else  {
       update "Generating certificate. You will need to enter the passphrase for the Root CA key."
       openssl ca -config $confPath/root.cnf -extensions v3_intermediate_ca \
@@ -272,7 +298,11 @@ then {
     update "Generating CSR."
     openssl req -config $confPath/intermediate.cnf -key private/$clID.key.pem \
     -new -sha512 -out csr/$clID.csr.pem -passin file:pass
-    rm -P pass
+    if [ $secErase == "rm" ]
+      then rm -P pass
+    else
+      shred -u pass
+    fi
   } else {
     update "Generating private key. You will need to choose a strong passphrase."
     openssl genrsa -aes256 -out private/$clID.key.pem 4096
@@ -324,7 +354,11 @@ then {
       -days 375 -notext -md sha512 -in csr/$clID.csr.pem \
       -out certs/$clID.cert.pem
       update "Securely Erasing Decrypted Key File"
-      rm -P private/intermediate.key.pem
+      if [ $secErase == "rm" ]
+        then rm -P private/intermediate.key.pem
+      else
+        shred -u private/intermediate.key.pem
+      fi
       update "Undoing Renaming of Intermediate CA certificate file"
       mv certs/intermediate.cert.pem certs/$intID.cert.pem
     } else {
